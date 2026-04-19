@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-  <!-- PWA -->
   <meta name="theme-color" content="#000000"/>
   <link rel="manifest" href="manifest.json"/>
 
@@ -20,48 +19,67 @@
     📅 Meal Calendar
   </h1>
 
-  <!-- Month Navigation -->
   <div class="flex justify-between items-center mb-3">
     <button onclick="prevMonth()" class="bg-gray-800 px-3 py-2 rounded-lg text-lg">⬅</button>
     <h2 id="monthTitle" class="text-lg text-green-400"></h2>
     <button onclick="nextMonth()" class="bg-gray-800 px-3 py-2 rounded-lg text-lg">➡</button>
   </div>
 
-  <!-- Weekdays -->
   <div class="grid grid-cols-7 text-center text-xs text-gray-400 mb-1">
     <div>Sun</div><div>Mon</div><div>Tue</div>
     <div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
   </div>
 
-  <!-- Calendar -->
   <div id="calendar" class="grid grid-cols-7 gap-2"></div>
 
-  <!-- Summary -->
   <div class="mt-5 bg-gray-900 p-4 rounded-xl text-sm">
-    <p>Total Meals: <span id="totalMeals">0</span></p>
-    <p>Total Cost: <span id="totalCost">0</span> BDT</p>
+    <div class="flex justify-between mb-1">
+      <span class="text-gray-400">Total Meals:</span>
+      <span id="totalMeals" class="font-bold">0</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-gray-400">Total Cost:</span>
+      <span class="font-bold"><span id="totalCost">0</span> BDT</span>
+    </div>
+  </div>
+
+  <div class="mt-4 bg-gray-900 p-4 rounded-xl text-sm flex flex-col gap-3 mb-6">
+    <h3 class="text-blue-400 font-semibold mb-1">📊 Monthly Insights</h3>
+    
+    <div class="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+      <span class="text-gray-400">Avg. Meals/Day</span>
+      <span id="avgMeals" class="font-bold text-white">0.0</span>
+    </div>
+
+    <div class="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+      <span class="text-gray-400">Projected Monthly Cost</span>
+      <span id="projectedCost" class="font-bold text-yellow-400">0 BDT</span>
+    </div>
+
+    <button onclick="logToday()" class="w-full mt-2 bg-gradient-to-r from-blue-700 to-blue-500 hover:from-blue-600 hover:to-blue-400 text-white font-bold py-3 px-4 rounded-xl shadow-lg active:scale-95 transition-transform duration-200">
+      ⚡ Quick Log for Today
+    </button>
   </div>
 </div>
 
-<!-- Modal -->
 <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center">
-  <div class="bg-gray-900 p-5 rounded-xl w-72">
-    <h3 class="text-base mb-3">Edit Meals</h3>
-    <p id="selectedDate" class="mb-2 text-sm"></p>
+  <div class="bg-gray-900 p-5 rounded-xl w-72 shadow-2xl border border-gray-800">
+    <h3 class="text-base mb-3 font-semibold text-blue-400">Edit Meals</h3>
+    <p id="selectedDate" class="mb-3 text-sm text-gray-400"></p>
     
     <input type="number" id="mealInput" min="0" max="2"
-      class="w-full p-3 text-black rounded text-lg"/>
+      class="w-full p-3 bg-gray-800 text-white rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"/>
 
-    <div class="flex justify-between mt-4">
-      <button onclick="saveMeal()" class="bg-blue-500 px-4 py-2 rounded-lg w-1/2 mr-2">Save</button>
-      <button onclick="closeModal()" class="bg-red-500 px-4 py-2 rounded-lg w-1/2">Cancel</button>
+    <div class="flex justify-between gap-3">
+      <button onclick="closeModal()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg w-1/2 transition-colors">Cancel</button>
+      <button onclick="saveMeal()" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg w-1/2 font-semibold transition-colors">Save</button>
     </div>
   </div>
 </div>
 
 <script>
 const costPerMeal = 120;
-let currentDate = new Date(2026, 0);
+let currentDate = new Date(); // Start on the current actual date
 let data = JSON.parse(localStorage.getItem('mealCalendar')) || {};
 let selectedKey = '';
 
@@ -91,11 +109,16 @@ function renderCalendar() {
     if (meals === 2) color = 'bg-green-700';
     else if (meals === 1) color = 'bg-blue-700';
 
+    // Highlight today's date slightly
+    const today = new Date();
+    const isToday = (year === today.getFullYear() && month === today.getMonth() && d === today.getDate());
+    const borderClass = isToday ? 'border-2 border-white' : 'border border-transparent';
+
     calendar.innerHTML += `
       <div onclick="openModal('${key}')"
-           class="h-20 flex flex-col justify-between p-2 rounded-xl cursor-pointer ${color} active:scale-95 transition">
+           class="h-20 flex flex-col justify-between p-2 rounded-xl cursor-pointer ${color} ${borderClass} hover:opacity-80 active:scale-95 transition-all">
         <div class="text-sm font-semibold">${d}</div>
-        <div class="text-xs">${meals} meal</div>
+        <div class="text-xs opacity-80">${meals} meal</div>
       </div>
     `;
   }
@@ -108,8 +131,14 @@ function openModal(key) {
   selectedKey = key;
   document.getElementById('modal').classList.remove('hidden');
   document.getElementById('modal').classList.add('flex');
-  document.getElementById('selectedDate').innerText = key;
+  
+  // Format date nicely for the modal
+  const [y, m, d] = key.split('-');
+  const dateObj = new Date(y, m - 1, d);
+  document.getElementById('selectedDate').innerText = dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  
   document.getElementById('mealInput').value = data[key] || 0;
+  document.getElementById('mealInput').focus();
 }
 
 // Close Modal
@@ -133,14 +162,50 @@ function saveMeal() {
   renderCalendar();
 }
 
-// Summary
+// Enhanced Summary with Monthly Insights
 function updateSummary() {
   let totalMeals = 0;
+  
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth() + 1;
 
-  Object.values(data).forEach(v => totalMeals += v);
+  // Calculate stats specific to the currently viewed month
+  Object.keys(data).forEach(key => {
+    const [y, m, d] = key.split('-');
+    if (parseInt(y) === year && parseInt(m) === month) {
+      totalMeals += data[key];
+    }
+  });
 
+  // Update original summary elements
   document.getElementById('totalMeals').innerText = totalMeals;
   document.getElementById('totalCost').innerText = totalMeals * costPerMeal;
+
+  // Calculate predictive insights
+  const today = new Date();
+  const isCurrentMonth = (today.getFullYear() === year && (today.getMonth() + 1) === month);
+  
+  const daysPassed = isCurrentMonth ? today.getDate() : new Date(year, month, 0).getDate();
+  
+  const avg = daysPassed > 0 ? (totalMeals / daysPassed).toFixed(1) : 0.0;
+  document.getElementById('avgMeals').innerText = avg;
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const projected = Math.round(avg * daysInMonth * costPerMeal);
+  document.getElementById('projectedCost').innerText = projected.toLocaleString() + ' BDT';
+}
+
+// Quick Action: Log Today
+function logToday() {
+  const today = new Date();
+  
+  if (currentDate.getMonth() !== today.getMonth() || currentDate.getFullYear() !== today.getFullYear()) {
+    currentDate = new Date(today.getFullYear(), today.getMonth());
+    renderCalendar();
+  }
+  
+  const key = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+  openModal(key);
 }
 
 // Navigation
@@ -156,9 +221,11 @@ function nextMonth() {
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js')
-    .then(() => console.log('SW Registered'))
-    .catch(err => console.log(err));
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('SW Registered'))
+      .catch(err => console.log('SW Registration failed: ', err));
+  });
 }
 
 // Init
