@@ -64,7 +64,7 @@
   <div class="mt-4 bg-gray-900 p-4 rounded-xl text-sm flex flex-col gap-2">
     <h3 class="text-green-400 font-semibold mb-2">📉 Last 7 Days Trend</h3>
     
-    <div id="barChart" class="flex justify-between items-end h-24 mt-2 gap-2 border-b border-gray-700 pb-1">
+    <div id="barChart" class="flex justify-between items-end h-28 mt-2 gap-2 border-b border-gray-700 pb-1 pt-6">
       </div>
     
     <div id="chartLabels" class="flex justify-between text-xs text-gray-500 mt-1">
@@ -148,7 +148,6 @@ function openModal(key) {
   
   document.getElementById('mealInput').value = data[key] || 0;
   
-  // Timeout ensures the modal is fully visible before focusing
   setTimeout(() => document.getElementById('mealInput').focus(), 50);
 }
 
@@ -203,7 +202,7 @@ function updateSummary() {
   document.getElementById('projectedCost').innerText = projected.toLocaleString() + ' BDT';
 }
 
-// Render Last 7 Days Chart
+// Render Last 7 Days Chart (Fixed Visibility)
 function renderChart() {
   const chart = document.getElementById('barChart');
   const labels = document.getElementById('chartLabels');
@@ -212,38 +211,34 @@ function renderChart() {
 
   const today = new Date();
   
-  // Loop backwards from 6 days ago up to today
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
     const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
     const meals = data[key] || 0;
     
-    // Determine bar height and color based on meals (max 2)
-    let heightClass = 'h-[10%]'; // Base height for 0 meals so it's visible
+    // Using explicit style strings so Tailwind CDN doesn't miss dynamic classes
+    let barHeight = '15%'; // Base height so 0 meals is still slightly visible
     let colorClass = 'bg-gray-700';
     
     if (meals === 1) {
-      heightClass = 'h-[50%]';
+      barHeight = '50%';
       colorClass = 'bg-blue-600';
     } else if (meals >= 2) {
-      heightClass = 'h-full';
+      barHeight = '100%';
       colorClass = 'bg-green-600';
     }
 
-    // Get the first letter of the day (e.g., 'S', 'M', 'T')
     const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0);
     const isToday = i === 0;
     const labelColor = isToday ? 'text-white font-bold' : 'text-gray-500';
 
-    // Inject Bar
     chart.innerHTML += `
       <div class="w-full flex flex-col justify-end items-center group relative h-full">
-        <span class="absolute -top-6 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity bg-black px-1 rounded">${meals}</span>
-        <div class="w-full rounded-t-sm ${heightClass} ${colorClass} hover:opacity-80 transition-all duration-300"></div>
+        <span class="absolute -top-6 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity bg-black px-2 py-1 rounded shadow-lg pointer-events-none">${meals}</span>
+        <div class="w-full rounded-t-sm ${colorClass} hover:opacity-80 transition-all duration-300" style="height: ${barHeight};"></div>
       </div>
     `;
     
-    // Inject Label
     labels.innerHTML += `<div class="w-full text-center ${labelColor}">${dayName}</div>`;
   }
 }
